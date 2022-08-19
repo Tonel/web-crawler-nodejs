@@ -1,0 +1,15 @@
+{
+  "name": "web-crawler-nodejs",
+  "version": "1.0.0",
+  "description": "A simple Web Crawler in Node.js",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "Antonello Zanini",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.27.2",
+    "cheerio": "^1.0.0-rc.12"
+  }
+}
