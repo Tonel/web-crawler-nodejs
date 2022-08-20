@@ -1,61 +1,66 @@
-const http = require("http")
-const axios = require("axios")
-const cheerio = require("cheerio")
+const axios = require("axios");
+const cheerio = require("cheerio");
 
-http.createServer(async function (request, response) {
+async function main(maxPages = 50) {
     // initialized with the first webpage to visit
-    const paginationURLsToVisit = ["https://scrapeme.live/shop"]
-    const visitedURLs = []
+    const paginationURLsToVisit = ["https://scrapeme.live/shop"];
+    const visitedURLs = [];
 
-    const productURLs = new Set()
+    const productURLs = new Set();
 
     // iterating until the queue is empty
-    while (paginationURLsToVisit.length !== 0) {
+    // or the iteration limit is hit
+    while (
+        paginationURLsToVisit.length !== 0 &&
+        visitedURLs.length <= maxPages
+        ) {
         // the current webpage to crawl
-        const paginationURL = paginationURLsToVisit.pop()
+        const paginationURL = paginationURLsToVisit.pop();
 
-        try {
-            // retrieving the HTML content from paginationURL
-            const pageHTML = await axios({
-                method: "GET",
-                url: paginationURL
-            })
+        // retrieving the HTML content from paginationURL
+        const pageHTML = await axios.get(paginationURL);
 
-            // adding the current webpage to the
-            // webpages already crawled
-            visitedURLs.push(paginationURL)
+        // adding the current webpage to the
+        // web pages already crawled
+        visitedURLs.push(paginationURL);
 
-            // initializing cheerio on the current webpage
-            const $ = cheerio.load(pageHTML.data)
+        // initializing cheerio on the current webpage
+        const $ = cheerio.load(pageHTML.data);
 
-            // retrieving the pagination URLs
-            $(".page-numbers a").each((index, element) => {
-                const paginationURL = $(element).attr('href')
+        // retrieving the pagination URLs
+        $(".page-numbers a").each((index, element) => {
+            const paginationURL = $(element).attr("href");
 
-                // adding the pagination URL to the queue
-                // of webpages to crawl, if it wasn't yet crawled
-                if (
-                    !visitedURLs.includes(paginationURL) &&
-                    !paginationURLsToVisit.includes(paginationURL)
-                ) {
-                    paginationURLsToVisit.push(paginationURL)
-                }
-            })
+            // adding the pagination URL to the queue
+            // of web pages to crawl, if it wasn't yet crawled
+            if (
+                !visitedURLs.includes(paginationURL) &&
+                !paginationURLsToVisit.includes(paginationURL)
+            ) {
+                paginationURLsToVisit.push(paginationURL);
+            }
+        });
 
-            // retrieving the product URLs
-            $("li.product a.woocommerce-LoopProduct-link").each((index, element) => {
-                const productURL = $(element).attr('href')
-                productURLs.add(productURL)
-            })
-        }  catch (e) {
-            // logging the error message
-            console.error(e)
-        }
+        // retrieving the product URLs
+        $("li.product a.woocommerce-LoopProduct-link").each((index, element) => {
+            const productURL = $(element).attr("href");
+            productURLs.add(productURL);
+        });
     }
 
-    // use productURLs for scraping purposes...
+    // logging the crawling results
+    console.log([...productURLs]);
 
-    response.writeHead(200, {"Content-Type": "application/json"});
-    response.write(JSON.stringify([...productURLs]))
-    response.end()
-}).listen(8888)
+    // use productURLs for scraping purposes...
+}
+
+main()
+    .then(() => {
+        process.exit(0);
+    })
+    .catch((e) => {
+        // logging the error message
+        console.error(e);
+
+        process.exit(1);
+    });
